@@ -1,2 +1,8 @@
 spring.application.name: employee-api
 server.port: 8111
+logging:
+  level:
+    root: INFO
+    com.reliaquest.api: DEBUG
+    org.springframework.web: INFO
+    reactor.netty: WARN

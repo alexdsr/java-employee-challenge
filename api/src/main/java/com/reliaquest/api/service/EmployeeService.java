@@ -3,71 +3,85 @@ package com.reliaquest.api.service;
 import com.reliaquest.api.client.MockEmployeeClient;
 import com.reliaquest.api.model.CreateEmployeeRequest;
 import com.reliaquest.api.model.Employee;
-import lombok.*;
-import org.springframework.stereotype.Service;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class EmployeeService {
+    private static final Logger log = LoggerFactory.getLogger(EmployeeService.class);
     private final MockEmployeeClient client;
 
+    public EmployeeService(MockEmployeeClient client) {
+        this.client = client;
+    }
+
     public List<Employee> getAll() {
+        log.info("Service: getAllEmployees()");
         return client.getAll();
     }
 
     public List<Employee> searchByName(String fragment) {
-        var f = fragment == null ? "" : fragment.toLowerCase(Locale.ROOT);
-        return client.getAll().stream()
+        log.info("Service: search employees by name contains='{}'", fragment);
+        String f = fragment == null ? "" : fragment.toLowerCase(Locale.ROOT);
+        List<Employee> filtered = client.getAll().stream()
                 .filter(e -> e.getName() != null && e.getName().toLowerCase(Locale.ROOT).contains(f))
                 .toList();
+        log.debug("Search fragment='{}' -> {} matches", fragment, filtered.size());
+        return filtered;
     }
 
     public Employee getById(String id) {
+        log.info("Service: getEmployeeById id={}", id);
         return client.getById(id);
     }
 
     public Integer highestSalary() {
-        return client.getAll().stream()
+        log.info("Service: highestSalary()");
+        Integer max = client.getAll().stream()
                 .map(Employee::getSalary)
-                .filter(Objects::nonNull)
+                .filter(s -> s != null)
                 .max(Integer::compareTo)
                 .orElse(0);
+        log.debug("Highest salary computed={}", max);
+        return max;
     }
 
     public List<String> top10NamesBySalary() {
-        return client.getAll().stream()
-                .sorted(Comparator.comparing(Employee::getSalary, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+        log.info("Service: top10NamesBySalary()");
+        List<String> names = client.getAll().stream()
+                .sorted(Comparator.comparing(Employee::getSalary,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .limit(10)
                 .map(Employee::getName)
                 .toList();
+        log.debug("Top10 names computed size={} top={}", names.size(),
+                names.isEmpty() ? "(none)" : names.get(0));
+        return names;
     }
 
     public Employee create(CreateEmployeeRequest input) {
+        log.info("Service: createEmployee name={}", input.getName());
         return client.create(input);
     }
 
-    /**
-     * API CONTRACT MISMATCH HANDLING:
-     * The controller method is deleteEmployeeById(id), but the mock server deletes by NAME in the path.
-     * Strategy:
-     * 1) GET /employee/{id} to resolve name
-     * 2) DELETE /employee/{name}
-     * 3) Return the deleted name (or throw if missing/failed)
-     */
+    /** Delete by id → resolve name → delete by name (mock quirk). */
     public String deleteByIdReturnName(String id) {
-        var e = client.getById(id);
+        log.info("Service: deleteEmployeeById id={}", id);
+        Employee e = client.getById(id);
         if (e == null || e.getName() == null) {
+            log.warn("Delete aborted: id={} not found", id);
             throw new IllegalArgumentException("Employee not found for id=" + id);
         }
         boolean ok = client.deleteByName(e.getName());
         if (!ok) {
+            log.warn("Delete failed: id={} name={}", id, e.getName());
             throw new IllegalStateException("Failed to delete employee name=" + e.getName());
         }
+        log.info("Deleted id={} name={}", id, e.getName());
         return e.getName();
     }
 }

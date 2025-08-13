@@ -4,61 +4,62 @@ import com.reliaquest.api.model.CreateEmployeeRequest;
 import com.reliaquest.api.model.Employee;
 import com.reliaquest.api.service.EmployeeService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-@Slf4j
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/employees")
 public class EmployeeController implements IEmployeeController<Employee, CreateEmployeeRequest> {
+    private static final Logger log = LoggerFactory.getLogger(EmployeeController.class);
     private final EmployeeService service;
+
+    public EmployeeController(EmployeeService service) {
+        this.service = service;
+    }
 
     @Override
     public ResponseEntity<List<Employee>> getAllEmployees() {
-        var result = service.getAll();
-        return ResponseEntity.ok(result);
+        log.info("Controller: GET /employees");
+        return ResponseEntity.ok(service.getAll());
     }
 
     @Override
     public ResponseEntity<List<Employee>> getEmployeesByNameSearch(@PathVariable String searchString) {
-        var result = service.searchByName(searchString);
-        return ResponseEntity.ok(result);
+        log.info("Controller: GET /employees/search/{}", searchString);
+        return ResponseEntity.ok(service.searchByName(searchString));
     }
 
     @Override
     public ResponseEntity<Employee> getEmployeeById(@PathVariable String id) {
+        log.info("Controller: GET /employees/{}", id);
         var e = service.getById(id);
-        if (e == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(e);
+        return e == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(e);
     }
 
     @Override
     public ResponseEntity<Integer> getHighestSalaryOfEmployees() {
+        log.info("Controller: GET /employees/highestSalary");
         return ResponseEntity.ok(service.highestSalary());
     }
 
     @Override
     public ResponseEntity<List<String>> getTopTenHighestEarningEmployeeNames() {
+        log.info("Controller: GET /employees/topTenHighestEarningEmployeeNames");
         return ResponseEntity.ok(service.top10NamesBySalary());
     }
 
     @Override
     public ResponseEntity<Employee> createEmployee(@Valid @RequestBody CreateEmployeeRequest employeeInput) {
-        var created = service.create(employeeInput);
-        return ResponseEntity.ok(created);
+        log.info("Controller: POST /employees name={}", employeeInput.getName());
+        return ResponseEntity.ok(service.create(employeeInput));
     }
 
     @Override
     public ResponseEntity<String> deleteEmployeeById(@PathVariable String id) {
-        String name = service.deleteByIdReturnName(id);
-        return ResponseEntity.ok(name);
+        log.info("Controller: DELETE /employees/{}", id);
+        return ResponseEntity.ok(service.deleteByIdReturnName(id));
     }
 }
