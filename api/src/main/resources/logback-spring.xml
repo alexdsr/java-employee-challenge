@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true">
-
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
     <!-- Boot's default LOG_LEVEL_PATTERN etc. are available -->
     <property name="CONSOLE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId}] %logger{36} - %msg%n"/>

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.*;
 
 public class EmployeeServiceTest {
 
+    @Test
     void deleteByIdUsesName() {
         var client = mock(MockEmployeeClient.class);
         var svc = new EmployeeService(client);
